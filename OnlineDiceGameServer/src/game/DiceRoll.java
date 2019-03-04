@@ -3,6 +3,7 @@ package game;
 import java.util.Random;
 
 public class DiceRoll implements Comparable<DiceRoll> {
+    public static int rolls = 0;
     private static Random rnd = new Random(System.currentTimeMillis());
 
     private int d1,d2;
@@ -12,12 +13,14 @@ public class DiceRoll implements Comparable<DiceRoll> {
     private static DiceRoll currentDiceRoll = null;
     
     private DiceRoll() {
+        rolls++;
         this.d1 = randomDiceInt();
         this.d2 = randomDiceInt();
         value = evaluateDiceRollValue();
     }
     
     public DiceRoll(String lie) {
+        rolls++;
         String[] str = lie.split(" ");
         this.d1 = Integer.parseInt(str[0]);
         this.d2 = Integer.parseInt(str[1]);
@@ -30,19 +33,23 @@ public class DiceRoll implements Comparable<DiceRoll> {
         return currentDiceRoll;
     }
     
-    public static DiceRoll getLastRoll() {
+    public static DiceRoll getLastDiceRoll() {
         return lastDiceRoll;
     }
     
-    public static DiceRoll getCurrentRoll() {
+    public static DiceRoll getCurrentDiceRoll() {
         return currentDiceRoll;
     }
     
-    public static void setCurrentRoll(DiceRoll dr) {
+    public static void setCurrentDiceRoll(DiceRoll dr) {
         currentDiceRoll = dr;
     }
     
-    public static void disableCurrentRoll() {
+    public static void setLastDiceRoll(DiceRoll dr) {
+        lastDiceRoll = dr;
+    }
+    
+    public static void disableCurrentDiceRoll() {
         currentDiceRoll = null;
     }
 

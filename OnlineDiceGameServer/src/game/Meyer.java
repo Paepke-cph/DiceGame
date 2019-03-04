@@ -8,8 +8,7 @@ import net.UserDisconnectedException;
 
 public class Meyer {
     private Random random;
-    //private RemoteUser[] users;
-    private int currentPlayerIndex = -1;
+    private int currentPlayerIndex;
     private boolean gameDone;
     
     private Player[] players;
@@ -30,6 +29,13 @@ public class Meyer {
         gameDone = false;
     }
     
+    public static void notEnoughPlayersToPlay(Player[] players) {
+        String message = "Waiting for more players to begin the game!";
+        for (Player player : players) {
+            player.user.sendMessage(message);
+        }
+    }
+    
     public void introduceGame() {
         
         for (Player player : players) {
@@ -39,164 +45,91 @@ public class Meyer {
         }
     }
     
-    public static void notEnoughPlayersToPlay(Player[] players) {
-        String message = "Waiting for more players to begin the game!";
-        for (Player player : players) {
-            player.user.sendMessage(message);
-        }
-    }
-    
     public void play() {
-        // STARTING PHASE
-        // Sets the current Player.
-        currentPlayer = players[currentPlayerIndex];
-        String messageToAllPlayers = "\nStarting player: " + currentPlayer.user.getUsername() + "\n";
-        for (Player player : players) {
-            if(player == player) {
-                player.user.sendMessage("\nYou are the starting player\n");
-            }
-            else {
-                player.user.sendMessage(messageToAllPlayers);
-            }
-        }
+        announceStartingPlayer();
         
-        // MAIN GAME LOOP!
         while(!gameDone) {
             // Roll the two die.
             DiceRoll dr = DiceRoll.rollTheDice();
             // DiceRoll which might be a fake - or the real one.
             // Check if this is the very first run of the game....
-            if(DiceRoll.getLastRoll() == null){
-                try {    
+            if(DiceRoll.rolls < 1){
+                try {
+                    System.out.println("Only display Roll");
                     displayedDiceRoll = displayRoll(dr);
                 }
                 catch (UserDisconnectedException ex) {
-                    // If a player disconnects, try to ignore him and jump to the next player.
-                    int counter = 0;
-                    for (Player player : players) {
-                        if(player.user.isConnected()) {
-                            counter++;
-                        }
-                    }
-                    if(counter == 0)
-                        gameDone = true;
+                    gameDone = connectedPlayerCount() == 0;
                 }
             }
             else {
                 try {
-                    if(checkRollValue(lastPlayer))
-                        checkLastRoll(displayedDiceRoll);
-
+                    if(DiceRoll.getLastDiceRoll() != null)
+                        checkLastDiceRoll(displayedDiceRoll);
+                                for (Player player : players) {
+                    if(player != currentPlayer)
+                        player.user.sendMessage("\n" + currentPlayer.user.getUsername() + " is rolling the dice!");
+                    }
                     displayedDiceRoll = displayRoll(dr);                    
                     checkRollValue(currentPlayer);
                 } 
                 catch (UserDisconnectedException ex) {
-                    // If a player disconnects, try to ignore him and jump to the next player.
-                    int counter = 0;
-                    for (Player player : players) {
-                        if(player.user.isConnected()) {
-                            counter++;
-                        }
-                    }
-                    if(counter == 0)
-                        gameDone = true;
+                    gameDone = connectedPlayerCount() <= 1;
                 }
             }
-            // Check how many players are alive!
-            if(getNumberOfAlivePlayers() < 2) {
-                gameDone = true;
-                break;
+            gameDone = minPlayerAliveCheck();
+            
+            if(!gameDone) {
+                setNextPlayer(false);
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Meyer.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
-            // Advance to the next player in the array
-            setNextPlayer(false);
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(Meyer.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        // Announce Winner of the game.
-        Player winner;
-        for (Player player : players) {
-            if(player.isAlive())
-                winner = player;
-        }
-        for (Player player : players) {
-            player.user.sendMessage("Congratulations "
-                    + player.user.getUsername()
-                    + "\n YOU HAVE WON THE GAME!");
-        }
-        
+        }        
+        announceWinner();
         DiceRoll.cleanUp();
     }
     
-    public boolean checkRollValue(Player player) {
-        if(displayedDiceRoll.compareTo(DiceRoll.getLastRoll()) == -1) {
-            player.reduceLife();
-            for (Player pla : players) {
-                pla.user.sendMessage("The value of " + pla.user.getUsername()
-                + "'s dice roll is less than the last roll."
-                + "\n" + pla.user.getUsername() + " is down to " + pla.getLives() + " lives!");
-            }
-            DiceRoll.disableCurrentRoll();
-            return false;
-        }
-        return true;
-    }
-    
-    public int getNumberOfAlivePlayers() {
-        int counter = 0;
-        for (Player player : players) {
-            if(player.isAlive() && player.user.isConnected())
-                counter++;
-        }
-        return counter;
-    }
-    
-    public void checkLastRoll(DiceRoll dr) throws UserDisconnectedException {
-        // Check if value is greater than last roll.
-        System.out.println(currentPlayer.user.getUsername());
-        currentPlayer.user.sendMessage("Do you believe " + lastPlayer.user.getUsername()
+    private void checkLastDiceRoll(DiceRoll dr) throws UserDisconnectedException {
+        // Ask if the currentPlayer wants to dispute the last DiceRoll.
+        currentPlayer.user.sendMessage("\nDo you believe " + lastPlayer.user.getUsername()
                                         + "'s roll"
                                         +"\nType in: \"yes\" or \"no\": ");
         boolean wantsToBelieve = currentPlayer.user.getChoiceFromUser("yes","no",LocalTime.now());
         if(!wantsToBelieve) {
+            // TRUE if last roll was not a lie - FALSE otherwise.
             boolean notLie = DiceRoll.checkRoll(dr);
-            int counter = 0;
+            if(notLie)
+                currentPlayer.reduceLife();
+            else
+                lastPlayer.reduceLife();
+            
             for (Player player : players) {
-                player.user.sendMessage(player.user.getUsername()
+                player.user.sendMessage("\n" + currentPlayer.user.getUsername()
                         + " doesn't believe " + lastPlayer.user.getUsername()
                         + "'s roll");
                 if(notLie) {
-                    // We don't want to reduce the life each time we send a message.
-                    // TODO(Benjamin): Clean this up!!!
-                    if(counter == 0) {
-                        player.reduceLife();
-                        counter++;
-                    }
                     player.user.sendMessage("The roll was not a lie!\n"
-                    + player.user.getUsername() + " is down to "
-                    + player.getLives() + " lives.\n");
+                    + currentPlayer.user.getUsername() + " is down to "
+                    + currentPlayer.getLives() + " lives.\n");
                 }
                 else {
-                    // We don't want to reduce the life each time we send a message.
-                    // TODO(Benjamin): Clean this up!!!
-                    if(counter == 0) {
-                        lastPlayer.reduceLife();
-                        counter++;
-                    }
                     player.user.sendMessage("The roll was a lie!\n"
                     + lastPlayer.user.getUsername() + " is down to "
                     + lastPlayer.getLives() + " lives.\n");
                 }
             }
+            DiceRoll.setLastDiceRoll(null);
         }
         else {
-            DiceRoll.setCurrentRoll(dr);
+            // If the current player doesn't want to dispute the last roll, set the last roll to be THE actual last roll.
+            DiceRoll.setLastDiceRoll(dr);
         }
     }
     
-    public DiceRoll displayRoll(DiceRoll dr) throws UserDisconnectedException {
+    private DiceRoll displayRoll(DiceRoll dr) throws UserDisconnectedException {
         DiceRoll dice;
         currentPlayer.user.sendMessage("\nYour roll:\n" 
                 + dr.toString()
@@ -217,28 +150,88 @@ public class Meyer {
         }
         // Inform all players about the roll.
         for (Player player : players) {
-            if(player != player) {
-                player.user.sendMessage("\n" + player.user.getUsername()
+            if(player != currentPlayer) {
+                player.user.sendMessage("\n" + currentPlayer.user.getUsername()
                         + " rolled: " + dice);
             }
         }
         return dice;
     }
+
+    private boolean checkRollValue(Player player) {
+        if(DiceRoll.getLastDiceRoll() != null) {        
+            if(displayedDiceRoll.compareTo(DiceRoll.getLastDiceRoll()) == -1) {
+                player.reduceLife();
+                for (Player pla : players) {
+                    pla.user.sendMessage("The value of " + pla.user.getUsername()
+                    + "'s dice roll is less than the last roll."
+                    + "\n" + pla.user.getUsername() + " is down to " + pla.getLives() + " lives!");
+                }
+                DiceRoll.rolls = -1;
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    private int connectedPlayerCount() {
+        int counter = 0;
+        for (Player player : players) {
+            if(player.user.isConnected()) {
+                counter++;
+            }
+        }
+        return counter;
+    }
+    
+    private boolean minPlayerAliveCheck() {
+        int counter = 0;
+        for (Player player : players) {
+            if(player.isAlive() && player.user.isConnected())
+                counter++;
+        }
+        return (counter < 2);
+    }
     
     private void setNextPlayer(boolean dcDetected) {
         if(!dcDetected)
             lastPlayer = currentPlayer;
+        
         currentPlayerIndex++;
         if(currentPlayerIndex % (players.length) == 0) {
             currentPlayerIndex = 0;
         }
         currentPlayer = players[currentPlayerIndex];
+        
         // If the new currentPlayer is not alive, move on to the next one.
         if(!currentPlayer.isAlive() || !currentPlayer.user.isConnected())
             setNextPlayer(true);
-        System.out.println("Current Player: " + currentPlayer.user.getUsername());
     }
     
+    private void announceStartingPlayer() {
+        currentPlayer = players[currentPlayerIndex];
+        for (Player player : players) {
+            if(player == currentPlayer)
+                player.user.sendMessage("\nYou are the starting player\n");
+            else
+                player.user.sendMessage("\nStarting player: "
+                        + currentPlayer.user.getUsername() + "\n");
+        }
+    }
+    
+    private void announceWinner() {
+        Player winner;
+        for (Player player : players) {
+            if(player.isAlive())
+                winner = player;
+        }
+        for (Player player : players) {
+            player.user.sendMessage("Congratulations "
+                    + player.user.getUsername()
+                    + "\n YOU HAVE WON THE GAME!");
+        }
+    }
+
     private int getRandomPlayerIndex() {
         return random.nextInt(players.length);
     }

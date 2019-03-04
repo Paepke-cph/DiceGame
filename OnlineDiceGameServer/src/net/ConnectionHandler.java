@@ -19,6 +19,8 @@ public class ConnectionHandler extends Thread {
     
     private int port;
     private boolean isRunning;
+    private final int MIN_CONNECTED = 2;
+    
     
     public ConnectionHandler(int port) {
         this.port = port;
@@ -101,22 +103,6 @@ public class ConnectionHandler extends Thread {
         return users;
     }
     
-    public RemoteUser[] getActiveUsersAsArray() {
-        int active = 0;
-        for (Connection connection : connections) {
-            if(connection.getUser().isConnected())
-                active++;
-        }
-        int index = 0;
-        RemoteUser[] users = new RemoteUser[active];
-        for (Connection connection : connections) {
-            if(connection.getUser().isConnected()) {
-                users[index] = connection.getUser();
-                index++;
-            }
-        }
-        return users;
-    }
     
     public void listUsers() {
         if(!connections.isEmpty()) {
@@ -137,16 +123,9 @@ public class ConnectionHandler extends Thread {
         System.out.println("Message queue is empty");
     }
     
-    private Message getNextMessage() {
-        if(!messageQueue.isEmpty()) {
-            return messageQueue.poll();
-        }
-        else
-            return null;
-    }
 
     public boolean isReadyForGame() {
-        return connections.size() >= 2;
+        return connections.size() >= MIN_CONNECTED;
     }
 
     public void cleanUp() {
