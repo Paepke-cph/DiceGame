@@ -32,7 +32,7 @@ public class Connection extends Thread {
             user.setConnected(true);
             
             outputStream = new DataOutputStream(connectionSocket.getOutputStream());
-            outputStream.writeUTF("Welcome to the server " + username);
+            outputStream.writeUTF("Connected\nA Game will start when there are enough players");
             isRunning = true;
         } catch (IOException ex) {
             Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);

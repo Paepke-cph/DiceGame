@@ -3,8 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Benjamin/Documents/NetBeansProjects/OnlineDiceGame/src/game/Meyer.java</file>
-            <file>file:/C:/Users/Benjamin/Documents/NetBeansProjects/OnlineDiceGame/src/game/DiceRoll.java</file>
+            <file>file:/C:/Users/Benjamin/Documents/NetBeansProjects/OnlineDiceGame/OnlineDiceGameServer/src/net/Connection.java</file>
+            <file>file:/C:/Users/Benjamin/Documents/NetBeansProjects/OnlineDiceGame/OnlineDiceGameServer/src/net/ConnectionHandler.java</file>
+            <file>file:/C:/Users/Benjamin/Documents/NetBeansProjects/OnlineDiceGame/OnlineDiceGameServer/src/game/Meyer.java</file>
+            <file>file:/C:/Users/Benjamin/Documents/NetBeansProjects/OnlineDiceGame/OnlineDiceGameServer/src/game/DiceRoll.java</file>
         </group>
     </open-files>
 </project-private>

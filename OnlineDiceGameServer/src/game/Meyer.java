@@ -30,18 +30,15 @@ public class Meyer {
     }
     
     public static void notEnoughPlayersToPlay(Player[] players) {
-        String message = "Waiting for more players to begin the game!";
+        String message = "\nWaiting for more players to begin the game!";
         for (Player player : players) {
             player.user.sendMessage(message);
         }
     }
     
     public void introduceGame() {
-        
         for (Player player : players) {
-            String result = "Welcome " + player.user.getUsername()
-                    + "\nThe game will begin when there are enough players connected!"; 
-            player.user.sendMessage(result);
+            player.user.sendMessage("Welcome " + player.user.getUsername() + "\n");
         }
     }
     
